@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Content-Type" content="text/html;charset=utf8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>AI Intrusion Detection System</title>
+
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+    <script src="{{ url_for('static', filename='js/application.js') }}" defer></script>
+</head>
+<body class="dashboard-body">
+    <div class="cyber-grid-bg" aria-hidden="true"></div>
+
+    <div id="dashboard-loading" class="dashboard-loading" role="status" aria-live="polite">
+        <div class="loader-ring"></div>
+        <p>Initializing secure channel…</p>
+    </div>
+
+    <div class="dashboard-shell">
+        <header class="top-nav">
+            <div class="top-nav__brand">
+                <h1 class="top-nav__title">🛡 AI Intrusion Detection System</h1>
+            </div>
+            <div class="top-nav__status-group">
+                <div class="status-pill" title="Capture subsystem">
+                    <span class="status-pill__dot" id="capture-dot"></span>
+                    <span>ACTIVE</span>
+                </div>
+                <div class="conn-status">
+                    Socket.IO: <strong id="connection-status">CONNECTING…</strong>
+                    <code id="connection-endpoint"></code>
+                </div>
+            </div>
+        </header>
+
+        <div id="alert-high-risk" class="alert-high-risk" role="alert" aria-live="assertive">
+            <span>⚠ HIGH-RISK TRAFFIC ON WIRE</span>
+            <span id="alert-high-risk-msg"></span>
+        </div>
+
+        <section class="metrics-row" aria-label="Live metrics">
+            <article class="metric-card">
+                <div class="metric-card__icon" aria-hidden="true">📡</div>
+                <div class="metric-card__label">Total flows</div>
+                <div class="metric-card__value" id="metric-total-flows">0</div>
+            </article>
+            <article class="metric-card metric-card--danger">
+                <div class="metric-card__icon" aria-hidden="true">⚔</div>
+                <div class="metric-card__label">Attacks detected</div>
+                <div class="metric-card__value" id="metric-attacks">0</div>
+            </article>
+            <article class="metric-card">
+                <div class="metric-card__icon" aria-hidden="true">⚡</div>
+                <div class="metric-card__label">Risk level</div>
+                <div class="metric-card__value" id="metric-risk" style="font-size:1rem;">—</div>
+            </article>
+            <article class="metric-card">
+                <div class="metric-card__icon" aria-hidden="true">🔗</div>
+                <div class="metric-card__label">Active sources</div>
+                <div class="metric-card__value" id="metric-connections">0</div>
+            </article>
+        </section>
+
+        <section class="panel" aria-labelledby="chart-title">
+            <div class="panel__head">
+                <h2 class="panel__title" id="chart-title">Live traffic — source IP flow count</h2>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="trafficChart" width="400" height="280" aria-label="Traffic chart"></canvas>
+            </div>
+        </section>
+
+        <div class="split-row">
+            <aside class="panel" aria-labelledby="ips-title">
+                <div class="panel__head">
+                    <h2 class="panel__title" id="ips-title">Top source IPs</h2>
+                </div>
+                <ul class="top-ips-list" id="top-ips-list">
+                    <li class="empty-state" style="padding:1rem;font-size:0.75rem;color:var(--text-muted);border:none;background:transparent;">Awaiting flow data…</li>
+                </ul>
+            </aside>
+
+            <section class="panel" aria-labelledby="flows-title">
+                <div class="panel__head">
+                    <h2 class="panel__title" id="flows-title">Captured flows</h2>
+                </div>
+                <div class="table-scroll">
+                    <table class="flows-table" id="details">
+                        <thead>
+                            <tr>
+                                <th>Flow ID</th>
+                                <th>Src IP</th>
+                                <th>Src Port</th>
+                                <th>Dst IP</th>
+                                <th>Dst Port</th>
+                                <th>Protocol</th>
+                                <th>Flow start</th>
+                                <th>Last seen</th>
+                                <th>App</th>
+                                <th>PID</th>
+                                <th>Prediction</th>
+                                <th>Prob</th>
+                                <th>Risk</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="flows-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <section class="panel terminal-panel" aria-labelledby="term-title">
+            <div class="terminal-header" id="term-title">
+                <span class="terminal-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                <span>LIVE_EVENT_STREAM // SECURE_LOG</span>
+            </div>
+            <div class="terminal-body" id="live-terminal"></div>
+        </section>
+    </div>
+
+    <noscript>
+        <div id="noscript">
+            JavaScript is disabled. Enable JavaScript to use the real-time dashboard.
+        </div>
+    </noscript>
+</body>
+</html>

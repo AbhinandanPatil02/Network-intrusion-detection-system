@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Content-Type" content="text/html;charset=utf8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>AI Threat Analysis — IDS</title>
+
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body class="detail-body">
+    <div class="cyber-grid-bg" aria-hidden="true"></div>
+
+    <div class="detail-shell">
+        <header class="detail-header">
+            <h1 class="detail-header__title">🔍 AI Threat Analysis</h1>
+            <div class="risk-badge-row">
+                <span id="risk-badge-big" class="risk-badge-big risk-badge-big--minimal" role="status">RISK: ANALYZING…</span>
+                <div class="risk-raw risk-markup">{{ risk|safe }}</div>
+            </div>
+        </header>
+
+        <section class="flow-details-card" aria-labelledby="flow-details-heading">
+            <h2 class="section-label" id="flow-details-heading">Flow details</h2>
+            {% if tables %}
+            {% for table in tables %}
+            <div class="flow-details-table-wrap">{{ table|safe }}</div>
+            {% endfor %}
+            {% else %}
+            <p class="empty-state">No flow data available.</p>
+            {% endif %}
+        </section>
+
+        {% if exp %}
+        <section class="lime-panel" aria-labelledby="lime-heading">
+            <h2 class="lime-panel__title" id="lime-heading">Feature impact analysis (LIME)</h2>
+            <div class="lime-panel__body lime-explanation-root">
+                {{ exp|safe }}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="ae-chart-panel" aria-labelledby="ae-heading">
+            <h2 class="ae-chart-panel__title" id="ae-heading">Autoencoder reconstruction error (top features)</h2>
+            <div id="ae-plot-host" class="ae-plot-host">
+                {{ ae_plot|safe }}
+            </div>
+        </section>
+
+        <a href="{{ url_for('index') }}" class="detail-back">← Return to live dashboard</a>
+    </div>
+
+    <script>
+    (function () {
+        function stripTags(html) {
+            var tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
+        }
+
+        var raw = document.querySelector('.risk-markup');
+        var badge = document.getElementById('risk-badge-big');
+        if (raw && badge) {
+            var t = stripTags(raw.innerHTML).toLowerCase();
+            var label = 'MINIMAL';
+            badge.className = 'risk-badge-big risk-badge-big--minimal';
+            if (t.indexOf('very high') !== -1) {
+                label = 'VERY HIGH';
+                badge.className = 'risk-badge-big risk-badge-big--veryhigh';
+            } else if (t.indexOf('high') !== -1) {
+                label = 'HIGH';
+                badge.className = 'risk-badge-big risk-badge-big--high';
+            } else if (t.indexOf('medium') !== -1) {
+                label = 'MEDIUM';
+                badge.className = 'risk-badge-big risk-badge-big--medium';
+            } else if (t.indexOf('low') !== -1 && t.indexOf('minimal') === -1) {
+                label = 'LOW';
+                badge.className = 'risk-badge-big risk-badge-big--low';
+            } else if (t.indexOf('minimal') !== -1) {
+                label = 'MINIMAL';
+                badge.className = 'risk-badge-big risk-badge-big--minimal';
+            }
+            badge.textContent = 'RISK: ' + label;
+        }
+
+        function darkPlotly(gd) {
+            if (typeof Plotly === 'undefined' || !gd || !gd.layout) return;
+            try {
+                var cyan = '#22d3ee';
+                var muted = '#64748b';
+                Plotly.relayout(gd, {
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: '#020617',
+                    font: { family: 'JetBrains Mono, monospace', color: '#94a3b8', size: 11 },
+                    xaxis: {
+                        gridcolor: 'rgba(51,65,85,0.6)',
+                        zerolinecolor: 'rgba(51,65,85,0.8)',
+                        tickfont: { color: muted }
+                    },
+                    yaxis: {
+                        gridcolor: 'rgba(51,65,85,0.6)',
+                        zerolinecolor: 'rgba(51,65,85,0.8)',
+                        tickfont: { color: muted }
+                    },
+                    title: { font: { color: cyan, size: 13 } }
+                });
+                if (gd.data && gd.data[0]) {
+                    Plotly.restyle(gd, {
+                        marker: { color: cyan, line: { color: '#06b6d4', width: 1 } }
+                    }, 0);
+                }
+            } catch (e) { console.warn('Plotly theme:', e); }
+        }
+
+        function restyleAllPlots() {
+            var plots = document.querySelectorAll('.js-plotly-plot');
+            plots.forEach(function (gd) {
+                darkPlotly(gd);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () {
+                setTimeout(restyleAllPlots, 100);
+                setTimeout(restyleAllPlots, 600);
+            });
+        } else {
+            setTimeout(restyleAllPlots, 100);
+            setTimeout(restyleAllPlots, 600);
+        }
+    })();
+    </script>
+</body>
+</html>
