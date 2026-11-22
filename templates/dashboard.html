@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>Sentinel NIDS · Security Operations</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/logo.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1112 0v5l2 2H4l2-2zM10 20a2 2 0 004 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5m0 0L8 9m4-4l4 4M5 19h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 16l-4-4 4-4M6 12h10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7V5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6L8 10H4zM16 9a4 4 0 010 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <!-- ============================== Sidebar ============================== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" width="32" height="32">
+      <div>
+        <div class="brand__name">Sentinel</div>
+        <div class="brand__sub">NIDS Console</div>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Primary">
+      <a href="#overview" data-view="overview" class="nav__item"><svg><use href="#i-grid"/></svg>Overview</a>
+      <a href="#traffic" data-view="traffic" class="nav__item"><svg><use href="#i-activity"/></svg>Traffic</a>
+      <a href="#alerts" data-view="alerts" class="nav__item"><svg><use href="#i-bell"/></svg>Alerts<span class="nav__badge" id="nav-alert-badge" hidden>0</span></a>
+      <a href="#forensics" data-view="forensics" class="nav__item"><svg><use href="#i-folder"/></svg>Forensics</a>
+      <a href="#system" data-view="system" class="nav__item"><svg><use href="#i-cog"/></svg>System</a>
+    </nav>
+    <div class="sidebar__foot">
+      <div class="engine-card">
+        <div class="engine-card__row"><span>Detection engine</span><span class="dot dot--good"></span></div>
+        <div class="engine-card__meta" id="engine-meta">RF + Autoencoder</div>
+        <div class="engine-card__meta" id="baseline-meta">Baseline: —</div>
+      </div>
+      <div class="user">
+        <div class="user__avatar">{{ (current_user or 'A')[0]|upper }}</div>
+        <div class="user__name">{{ current_user or 'analyst' }}<small>SOC analyst</small></div>
+        {% if auth_enabled %}
+        <form method="post" action="/logout">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <button class="icon-btn" title="Sign out" aria-label="Sign out"><svg><use href="#i-logout"/></svg></button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================== Main ============================== -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <h1 class="topbar__title" id="view-title">Overview</h1>
+        <div class="topbar__sub" id="view-sub">Real-time network threat posture</div>
+      </div>
+      <div class="topbar__right">
+        <form class="search" id="global-search" role="search">
+          <svg><use href="#i-search"/></svg>
+          <input type="search" placeholder="Search IP, port, process…" aria-label="Search flows">
+        </form>
+        <span class="pill" id="capture-pill"><span class="dot"></span><span id="capture-text">Connecting…</span></span>
+        <button class="icon-btn" id="sound-toggle" title="Audible alerts for critical events" aria-pressed="false"><svg><use href="#i-volume"/></svg></button>
+      </div>
+    </header>
+
+    <div class="banner" id="critical-banner" role="alert" hidden>
+      <strong>Critical threat detected</strong><span id="critical-banner-text"></span>
+      <a href="#alerts" class="banner__link">Review alerts →</a>
+      <button class="icon-btn icon-btn--sm" id="critical-banner-close" aria-label="Dismiss"><svg><use href="#i-x"/></svg></button>
+    </div>
+
+    <!-- ------------------------------ Overview ------------------------------ -->
+    <section class="view" id="view-overview">
+      <div class="kpis">
+        <article class="kpi"><div class="kpi__label">Flows analyzed</div><div class="kpi__value" id="kpi-flows">0</div><div class="kpi__meta" id="kpi-flows-meta">—</div></article>
+        <article class="kpi"><div class="kpi__label">Malicious</div><div class="kpi__value" id="kpi-malicious">0</div><div class="kpi__meta" id="kpi-malicious-meta">0% of traffic</div></article>
+        <article class="kpi"><div class="kpi__label">Suspicious</div><div class="kpi__value" id="kpi-suspicious">0</div><div class="kpi__meta">anomalies &amp; low-confidence</div></article>
+        <article class="kpi"><div class="kpi__label">Open alerts</div><div class="kpi__value" id="kpi-alerts">0</div><div class="kpi__meta" id="kpi-alerts-meta">—</div></article>
+        <article class="kpi"><div class="kpi__label">Throughput</div><div class="kpi__value" id="kpi-pps">0</div><div class="kpi__meta">packets / second</div></article>
+        <article class="kpi"><div class="kpi__label">Active flows</div><div class="kpi__value" id="kpi-active">0</div><div class="kpi__meta" id="kpi-active-meta">in flow table</div></article>
+      </div>
+
+      <div class="grid grid--2-1">
+        <article class="card">
+          <header class="card__head">
+            <div><h2>Traffic timeline</h2><p>Classified flows per 10 s · last 30 minutes</p></div>
+            <div class="legend" id="timeline-legend">
+              <span><i style="background:var(--s-benign)"></i>Benign</span>
+              <span><i style="background:var(--s-suspicious)"></i>Suspicious</span>
+              <span><i style="background:var(--s-malicious)"></i>Malicious</span>
+            </div>
+          </header>
+          <div class="chart-box"><canvas id="timeline-chart" aria-label="Stacked bar chart of classified flows over time" role="img"></canvas></div>
+        </article>
+        <article class="card">
+          <header class="card__head"><div><h2>Threat categories</h2><p>Detections by attack family</p></div></header>
+          <div class="hbars" id="threat-categories"></div>
+        </article>
+      </div>
+
+      <div class="grid grid--2-1-1">
+        <article class="card">
+          <header class="card__head"><div><h2>Recent alerts</h2><p>Correlated and de-duplicated</p></div><a href="#alerts" class="link">View all</a></header>
+          <ul class="alert-list" id="recent-alerts"></ul>
+        </article>
+        <article class="card">
+          <header class="card__head"><div><h2>Top threat sources</h2><p>Non-benign flows by source</p></div></header>
+          <div class="hbars hbars--compact" id="top-threat-src"></div>
+        </article>
+        <article class="card">
+          <header class="card__head"><div><h2>Top destination ports</h2><p>All flows</p></div></header>
+          <div class="hbars hbars--compact" id="top-ports"></div>
+        </article>
+      </div>
+
+      <article class="card">
+        <header class="card__head"><div><h2>Live flow feed</h2><p>Most recent classified flows</p></div><a href="#traffic" class="link">Open traffic explorer</a></header>
+        <div class="table-wrap">
+          <table class="table" id="live-feed">
+            <thead><tr><th>Time</th><th>Source</th><th>Destination</th><th>Proto</th><th>Process</th><th>Classification</th><th class="num">Risk</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <!-- ------------------------------ Traffic ------------------------------ -->
+    <section class="view" id="view-traffic" hidden>
+      <article class="card">
+        <div class="toolbar">
+          <input type="search" id="flt-q" class="input" placeholder="Filter by IP, port, process, label…">
+          <select id="flt-verdict" class="input">
+            <option value="">All verdicts</option>
+            <option value="malicious">Malicious</option>
+            <option value="suspicious">Suspicious</option>
+            <option value="benign">Benign</option>
+          </select>
+          <select id="flt-label" class="input">
+            <option value="">All classes</option>
+            {% for c in classes %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+          </select>
+          <select id="flt-source" class="input"><option value="">All sources</option><option value="live">Live capture</option></select>
+          <label class="toggle"><input type="checkbox" id="flt-live" checked><span>Live update</span></label>
+          <span class="spacer"></span>
+          <a class="btn" id="export-flows" href="/api/export/flows.csv"><svg><use href="#i-download"/></svg>Export CSV</a>
+        </div>
+        <div class="table-wrap">
+          <table class="table table--hover" id="flows-table">
+            <thead><tr>
+              <th>#</th><th>Last seen</th><th>Source</th><th>Destination</th><th>Proto</th><th class="num">Packets</th>
+              <th class="num">Bytes</th><th class="num">Duration</th><th>Process</th><th>Classification</th><th class="num">Conf.</th><th class="num">Risk</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="pager">
+          <span id="flows-count">—</span>
+          <span class="spacer"></span>
+          <button class="btn btn--sm" id="flows-prev">Previous</button>
+          <button class="btn btn--sm" id="flows-next">Next</button>
+        </div>
+      </article>
+    </section>
+
+    <!-- ------------------------------ Alerts ------------------------------ -->
+    <section class="view" id="view-alerts" hidden>
+      <article class="card">
+        <div class="toolbar">
+          <div class="tabs" role="tablist" id="alert-tabs">
+            <button role="tab" data-status="open" class="tab is-active">Open</button>
+            <button role="tab" data-status="acknowledged" class="tab">Acknowledged</button>
+            <button role="tab" data-status="resolved" class="tab">Resolved</button>
+            <button role="tab" data-status="all" class="tab">All</button>
+          </div>
+          <select id="alert-sev" class="input">
+            <option value="">All severities</option>
+            <option value="critical">Critical</option><option value="high">High</option>
+            <option value="medium">Medium</option><option value="low">Low</option>
+          </select>
+          <span class="spacer"></span>
+          <a class="btn" href="/api/export/alerts.csv"><svg><use href="#i-download"/></svg>Export CSV</a>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="alerts-table">
+            <thead><tr>
+              <th>Severity</th><th>Detection</th><th>Source → Destination</th><th class="num">Events</th>
+              <th>First seen</th><th>Last seen</th><th class="num">Risk</th><th>Status</th><th class="actions-col">Actions</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="pager"><span id="alerts-count">—</span></div>
+      </article>
+    </section>
+
+    <!-- ------------------------------ Forensics ------------------------------ -->
+    <section class="view" id="view-forensics" hidden>
+      <div class="grid grid--1-2">
+        <article class="card">
+          <header class="card__head"><div><h2>Analyze a capture</h2><p>Offline analysis of .pcap / .pcapng files through the same detection pipeline</p></div></header>
+          <label class="dropzone" id="dropzone">
+            <input type="file" id="pcap-input" accept=".pcap,.pcapng,.cap" hidden>
+            <svg><use href="#i-upload"/></svg>
+            <strong>Drop a capture file here</strong>
+            <span>or click to browse · up to {{ max_upload_mb }} MB</span>
+          </label>
+          <div class="upload-status" id="upload-status" hidden></div>
+        </article>
+        <article class="card">
+          <header class="card__head"><div><h2>Analysis jobs</h2><p>Session history</p></div></header>
+          <div class="table-wrap">
+            <table class="table" id="jobs-table">
+              <thead><tr><th>File</th><th>Status</th><th class="num">Packets</th><th class="num">Flows</th><th class="num">Threats</th><th>Started</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ------------------------------ System ------------------------------ -->
+    <section class="view" id="view-system" hidden>
+      <div class="grid grid--1-1">
+        <article class="card">
+          <header class="card__head"><div><h2>Live capture</h2><p>Packet acquisition from the network interface</p></div>
+            <div class="btn-group">
+              <button class="btn" id="capture-start"><svg><use href="#i-play"/></svg>Start</button>
+              <button class="btn" id="capture-stop"><svg><use href="#i-stop"/></svg>Stop</button>
+            </div>
+          </header>
+          <dl class="kv" id="capture-info"></dl>
+          <div class="callout" id="capture-error" hidden></div>
+        </article>
+        <article class="card">
+          <header class="card__head"><div><h2>Detection model</h2><p>Hybrid supervised + unsupervised engine</p></div></header>
+          <dl class="kv" id="model-info"></dl>
+        </article>
+        <article class="card">
+          <header class="card__head"><div><h2>Global feature importance</h2><p>Random Forest mean decrease in impurity · top 12</p></div></header>
+          <div class="hbars hbars--compact" id="importance"></div>
+        </article>
+        <article class="card">
+          <header class="card__head"><div><h2>Configuration</h2><p>Set via NIDS_* environment variables or CLI flags</p></div></header>
+          <dl class="kv" id="config-info"></dl>
+        </article>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ============================== Flow drawer ============================== -->
+<div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+<aside class="drawer" id="flow-drawer" aria-hidden="true" aria-labelledby="drawer-title" role="dialog">
+  <header class="drawer__head">
+    <div>
+      <div class="drawer__eyebrow" id="drawer-eyebrow">Flow</div>
+      <h2 id="drawer-title">—</h2>
+    </div>
+    <button class="icon-btn" id="drawer-close" aria-label="Close"><svg><use href="#i-x"/></svg></button>
+  </header>
+  <div class="drawer__body" id="drawer-body"></div>
+</aside>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+</body>
+</html>

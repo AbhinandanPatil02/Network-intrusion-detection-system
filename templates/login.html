@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Sign in · Sentinel NIDS</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/logo.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <div class="login-brand">
+      <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" width="40" height="40">
+      <div>
+        <h1>Sentinel NIDS</h1>
+        <p>Network Intrusion Detection Console</p>
+      </div>
+    </div>
+
+    {% if error %}<div class="form-error" role="alert">{{ error }}</div>{% endif %}
+
+    <form method="post" autocomplete="on">
+      <label class="field">
+        <span>Username</span>
+        <input name="username" autocomplete="username" required autofocus>
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <button class="btn btn--primary btn--block" type="submit">Sign in</button>
+    </form>
+    <p class="login-foot">Authorized personnel only. Activity on this console is logged.</p>
+    <p class="login-foot muted">v{{ version }}</p>
+  </main>
+</body>
+</html>

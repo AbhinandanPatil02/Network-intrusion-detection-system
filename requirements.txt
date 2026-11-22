@@ -1,13 +1,11 @@
-Flask==2.1.1
-Flask-SocketIO==5.1.1
-simple-websocket==0.5.1
-scapy==2.4.5
+# Sentinel NIDS runtime dependencies (Python 3.10 – 3.11 recommended)
+# scikit-learn is pinned to the version the bundled Random Forest was pickled with.
+Flask>=3.0,<4
+Flask-SocketIO>=5.3,<6
+simple-websocket>=1.0
+scapy>=2.5,<3
+numpy>=1.24,<2
 scikit-learn==1.2.0
-joblib==1.2.0
-pandas==1.5.1
-psutil==5.9.4
-lime==0.2.0.1
-dill==0.3.6
-tensorflow==2.11.0
-plotly==5.13.0
-Werkzeug==2.2.2
+joblib>=1.2,<1.5
+h5py>=3.8
+psutil>=5.9
